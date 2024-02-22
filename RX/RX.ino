@@ -201,6 +201,7 @@ ISR(TIMER1_COMPA_vect){
       Serial2.end();
       Serial1.begin(1200, SERIAL_8N2);
       //for(int i = 0; i < 1; i++){
+      Serial1.write("000000000000000000");
       Serial1.write("<U>");
       //}
       Serial2.begin(1200, SERIAL_8N2);
