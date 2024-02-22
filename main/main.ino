@@ -6,7 +6,6 @@
 const int RED_LED_PIN = PE5; // Pin 3 on arduino 
 const int BLUE_LED_PIN = PE4; // Pin 2 on arduino
 
-
 //=============================================//
 //              Global variables               //
 //=============================================//
@@ -59,6 +58,8 @@ void loop() {
     newdata_flag = receive();
     if(newdata_flag && last_char_received == 'T') //if char is T
     {
+      disableTimer();
+      timeout_flag = true;
       arrival_time = millis();
       last_char_received == '0';
       turnaround_time = arrival_time - departure_time;
