@@ -30,6 +30,7 @@ void setup() {
   Serial1.end(); //turn off TX by default
   Serial2.begin(1200, SERIAL_8N2); //turn on RX
   timerInit(); //initialize background timer
+  clockInit(); //initialize timer for 43kHz signal
 
   #ifdef MASTER 
     Serial.println("Master Arduino is ready");
@@ -50,10 +51,14 @@ void loop() {
   #ifdef MASTER
     if(timeout_flag == true){
       timeout_flag = false;
+      Serial1.begin(1200, SERIAL_8N2);
+      enableClock(); //enable 43kHz carriage
       Serial1.write("0000000000"); // Prepare analog circuit to receive 'T'
-      enableTimer(1000); // 1s timeout
-      Serial1.write("T");
+      enableTimer(200); // 100ms timeout
+      Serial1.write("T"); // T+Slaveid
+      disableClock(); //disable 43kHz carriage
       departure_time = millis();
+      Serial.print("S\n");
     }
     newdata_flag = receive();
     if(newdata_flag && last_char_received == 'T') //if char is T
@@ -117,18 +122,20 @@ void enableTimer(int time){
   TCCR1B |= 0x01; // This enables timer or clock source 
 }
 
-
 ISR(TIMER1_COMPA_vect){
   //PORTE ^= (1 << PE5);
-  if( (timer_counter >= timer_time - 1) && (timer_time != -1) ){ //after timer timeouts, do the following:
+  //if( (timer_counter >= timer_time - 1) && (timer_time != -1) ){
+  if( (timer_counter >= timer_time - 1) ){ //after timer timeouts, do the following:
     #ifdef MASTER
       timeout_flag = true;
       timer_counter = 0;
       disableTimer();
     #else
       Serial1.begin(1200, SERIAL_8N2);
+      enableClock(); //enable 43kHz carriage
       Serial1.write("0000000000");
       Serial1.write("T");
+      disableClock(); //disable 43kHz carriage
       Serial1.end();
       timer_counter = 0;
       disableTimer();
@@ -136,4 +143,38 @@ ISR(TIMER1_COMPA_vect){
   }else{
     timer_counter++;
   }
+}
+
+//=============================================//
+//              TIMER 2                        //
+//=============================================//
+
+void clockInit(){
+  //Reset Timer1 Control Reg A
+  TCCR3A = 0;
+  TCCR3B &= ~0xDF;
+  TCCR3B |= 0x08; 
+
+  //Set the prescaler of 1
+  TCCR3B |= 0x01; //
+
+  // Reset Timer1 and set compare value
+  TCNT3 = 0;
+  OCR3A = 197;
+
+  //Enable Timer1 compare interrupt 
+  TIMSK3 = (1 << OCIE3A);
+  TCCR3B |= 0x01; // This enables timer or clock source 
+}
+
+void disableClock(){
+  TCCR2B &= ~0x01;
+}
+
+void enableClock(){
+  TCCR2B |= 0x01; // This enables timer or clock source 
+}
+
+ISR(TIMER3_COMPA_vect){
+  PORTE ^= (1 << BLUE_LED_PIN);
 }
