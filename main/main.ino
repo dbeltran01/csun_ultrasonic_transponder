@@ -40,7 +40,6 @@ void setup() {
 
   DDRE |= (1 << RED_LED_PIN);
   DDRE |= (1 << BLUE_LED_PIN);
-
 }
 
 
